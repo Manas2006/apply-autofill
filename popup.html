@@ -35,7 +35,8 @@
   .row { display: flex; gap: 6px; margin-top: 6px; }
   #out { display: none; }
   .dl { display: none; margin: 6px 0 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); grid-column: 2; }
-  .dl > .btn { margin-top: 6px; padding: 5px 10px; font-size: 12px; }
+  .dl-btns { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .dl-btns .btn { padding: 5px 10px; font-size: 12px; }
   .dl-l { display: block; font-size: 12px; color: var(--mute); margin-bottom: 4px; }
   .dl-row { display: flex; align-items: center; gap: 4px; }
   .dl-row input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 7px; }
@@ -55,6 +56,14 @@
   li.draft.open .r { -webkit-line-clamp: unset; }
   li.draft .tools { display: flex; gap: 10px; font-size: 11px; margin-top: 2px; }
   .msg { font-size: 12px; margin: 6px 0 0; }
+  .msg.info { color: var(--mute); }
+  #track[hidden], #trackForm[hidden] { display: none; }
+  .trk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; align-items: end; }
+  .trk-row label { font-size: 11px; color: var(--mute); display: flex; flex-direction: column; gap: 2px; }
+  .trk-row input, .trk-row select { font-size: 12px; padding: 5px 7px; }
+  .trk-row .btn { padding: 6px 10px; font-size: 12px; }
+  #trackStatus.warn { color: var(--warn); }
+  #trackStatus.good { color: var(--ok); }
 </style>
 </head>
 <body>
@@ -72,6 +81,7 @@
   <button class="btn primary" id="fill">Fill this page</button>
   <p class="hint mute" id="shortcut"></p>
   <label class="toggle"><input type="checkbox" id="overwrite"> Overwrite fields that already have text</label>
+  <label class="toggle"><input type="checkbox" id="attach"> Attach my top resume to the resume field</label>
   <label class="toggle" id="aiToggle"><input type="checkbox" id="aiDrafts"> <span><b>AI drafts</b> for written questions <span id="aiWhy"></span></span></label>
   <div class="nudge" id="nudge"></div>
 
@@ -83,7 +93,7 @@
     <div class="dl" id="dl">
       <label class="dl-l" for="dlName">Download the top resume as</label>
       <div class="dl-row"><input type="text" id="dlName" spellcheck="false"><span class="ext" id="dlExt">.pdf</span></div>
-      <button class="btn primary" id="dlBtn">Download PDF</button>
+      <div class="dl-btns"><button class="btn primary" id="dlBtn">Download PDF</button><button class="btn" id="attachBtn">Attach to this form</button></div>
       <p class="src" id="dlMsg"></p>
     </div>
     <details id="jdBox"><summary id="jdSummary">Job description</summary><pre id="jdPreview"></pre>
@@ -92,9 +102,21 @@
     </details>
   </section>
 
+  <section class="card" id="track" hidden>
+    <div class="card-h"><h2>Application tracker</h2><button class="icon-btn" id="retrack" title="Check Airtable again">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg></button></div>
+    <p class="src" id="trackStatus">Checking your tracker…</p>
+    <div id="trackForm" hidden>
+      <div class="trk-row"><label>Company<input type="text" id="tCompany" spellcheck="false"></label><label>Role<input type="text" id="tRole" spellcheck="false"></label></div>
+      <div class="trk-row"><label>Status<select id="tStatus"></select></label><button class="btn primary" id="logBtn">Log as applied</button></div>
+      <p class="src" id="trackMsg"></p>
+    </div>
+  </section>
+
   <section class="card" id="out">
     <div class="sum"><span class="ok" id="nFilled"></span><span class="ai" id="nAi"></span><span class="warn" id="nReview"></span></div>
     <p class="msg warn" id="msg"></p>
+    <p class="msg info" id="info"></p>
     <p class="src" id="used"></p>
     <div id="aiWrap"><h3>AI drafts: read before you submit</h3><ul id="drafts"></ul></div>
     <div id="needWrap"><h3>Needs you</h3><ul id="need"></ul></div>
@@ -103,6 +125,7 @@
 </main>
 <script src="defaults.js"></script>
 <script src="lib/filestore.js"></script>
+<script src="lib/naming.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>

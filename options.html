@@ -36,7 +36,9 @@
   .keyrow input { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .check { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 400 !important; margin: 4px 0; cursor: pointer; }
   .link { color: var(--accent); cursor: pointer; text-decoration: underline; }
-  #keyStatus.good { color: var(--ok); } #keyStatus.bad { color: var(--warn); }
+  #keyStatus.good, #airStatus.good { color: var(--ok); } #keyStatus.bad, #airStatus.bad { color: var(--warn); }
+  section.air { border-color: #0f766e; }
+  details.cols summary { cursor: pointer; font-size: 12px; font-weight: 600; margin: 4px 0 8px; }
 </style>
 </head>
 <body>
@@ -48,6 +50,17 @@
   </div>
   <p class="lede">Every change saves automatically and stays in this browser. Blank answers are never guessed: those questions get an amber outline on the page so you can answer them yourself.</p>
   <div id="sectionsTop"></div>
+
+  <section>
+    <h2>While filling</h2>
+    <div class="grid">
+      <div class="f wide">
+        <label class="check"><input type="checkbox" id="setAttach"> Attach my top-ranked resume to the resume upload field, renamed to my name plus the role</label>
+        <label class="check"><input type="checkbox" id="setLearn"> When I answer an amber question myself, offer to save the answer for next time</label>
+        <span class="hint">Only resume fields get a file, and only one of your own resumes from the hub (the PDF when the field takes PDFs). Learned answers are saved only when you press Save on the page.</span>
+      </div>
+    </div>
+  </section>
 
   <section class="ai">
     <h2>AI mode</h2>
@@ -65,6 +78,24 @@
         <span class="hint">Everything the AI should know about you and how you write. It goes with every draft, together with your top-ranked resume and the job description. <a class="link" id="resetCtx">Reset to default</a></span></div>
     </div>
     <div class="actions"><button class="btn" id="openHub">Open resume hub</button><span class="mute" id="hubCount"></span></div>
+  </section>
+
+  <section class="air">
+    <h2>Application tracker (Airtable)</h2>
+    <p class="note">Warns you when a job is already in your tracker, and adds or updates its row when you apply: status Applied, today's date, company, role, req, location and the resume you used. Automatic logging happens only on pages you filled, after you submit yourself and a confirmation appears. The popup also has a button to log it by hand.</p>
+    <div class="grid">
+      <div class="f wide"><label for="airToken">Personal access token</label>
+        <div class="keyrow"><input type="password" id="airToken" autocomplete="off" spellcheck="false" placeholder="pat..."><button class="btn" id="showAir">Show</button><button class="btn" id="testAir">Test</button></div>
+        <span class="hint" id="airStatus">Create one at airtable.com/create/tokens with the data.records:read and data.records:write scopes, limited to your tracker base. Stored only in this browser, sent only to api.airtable.com, never included in profile exports.</span></div>
+      <div class="f"><label for="airBase">Base ID</label><input type="text" id="airBase" spellcheck="false" placeholder="app..."><span class="hint">From the base's URL: airtable.com/<b>app…</b>/tbl…</span></div>
+      <div class="f"><label for="airTable">Table ID or name</label><input type="text" id="airTable" spellcheck="false" placeholder="tbl... or Applications"></div>
+      <div class="f"><label for="airApplied">Status that means applied</label><input type="text" id="airApplied" spellcheck="false"></div>
+      <div class="f"><label>Behavior</label>
+        <label class="check"><input type="checkbox" id="airDup"> Warn me when a job is already tracked</label>
+        <label class="check"><input type="checkbox" id="airAuto"> Log automatically when I submit</label></div>
+      <details class="f wide cols"><summary>Columns</summary><div class="grid" id="airFields"></div>
+        <span class="hint">Field names, or field IDs (fld…) so renaming a column doesn't break anything. Leave one blank to skip that column. Term is only set when the posting names a season like "Summer 2027" that the column already has.</span></details>
+    </div>
   </section>
 
   <div id="sections"></div>

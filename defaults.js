@@ -93,3 +93,35 @@ const AI_MODELS = [
   ['claude-haiku-5-5', 'Claude Haiku 5.5 (cheapest)'],
 ];
 function mergeAi(stored) { return Object.assign({}, AI_DEFAULTS, stored || {}); }
+
+// Fill behavior. The popup and Options both edit these.
+const SETTINGS_DEFAULTS = { overwrite: false, attach: true, learn: true };
+function mergeSettings(stored) { return Object.assign({}, SETTINGS_DEFAULTS, stored || {}); }
+
+// Application tracker in Airtable. Columns can be field IDs (fld...) or field names.
+// The token is stored apart from the profile and never exported.
+const AIRTABLE_DEFAULTS = {
+  token: '',
+  baseId: '',
+  table: 'Applications',
+  fields: {
+    company: 'Company',
+    role: 'Role',
+    status: 'Status',
+    date: 'Applied Date',
+    req: 'Req',
+    location: 'Location',
+    resume: 'Resume Variant',
+    notes: 'Notes',
+    term: 'Term',
+  },
+  statusApplied: 'Applied',
+  dupCheck: true,
+  autoLog: true,
+};
+function mergeAirtable(stored) {
+  const s = stored || {};
+  const o = Object.assign({}, AIRTABLE_DEFAULTS, s);
+  o.fields = Object.assign({}, AIRTABLE_DEFAULTS.fields, s.fields || {});
+  return o;
+}

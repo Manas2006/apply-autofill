@@ -98,10 +98,12 @@ function flashSaved() {
   flashSaved.t = setTimeout(() => s.classList.remove('on'), 1200);
 }
 
+let lastSaved = '';
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     const toStore = Object.assign({}, profile, { custom: profile.custom.filter((c) => c && (c.q || c.a)) });
+    lastSaved = JSON.stringify(toStore);
     await chrome.storage.local.set({ profile: toStore });
     flashSaved();
     updatePills();
@@ -275,13 +277,78 @@ document.getElementById('resetCtx').addEventListener('click', () => {
 });
 document.getElementById('openHub').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('hub.html') }));
 
+// ---------- fill behavior ----------
+let settings = mergeSettings();
+async function saveSettings() { await chrome.storage.local.set({ settings }); flashSaved(); }
+function renderSettings() {
+  document.getElementById('setAttach').checked = !!settings.attach;
+  document.getElementById('setLearn').checked = !!settings.learn;
+}
+document.getElementById('setAttach').addEventListener('change', (e) => { settings.attach = e.target.checked; saveSettings(); });
+document.getElementById('setLearn').addEventListener('change', (e) => { settings.learn = e.target.checked; saveSettings(); });
+
+// ---------- Airtable tracker ----------
+const AIR_COLS = [
+  ['company', 'Company'], ['role', 'Role'], ['status', 'Status'], ['date', 'Applied date'], ['req', 'Req / job ID'],
+  ['location', 'Location'], ['resume', 'Resume variant'], ['notes', 'Notes'], ['term', 'Term'],
+];
+let air = mergeAirtable();
+let airTimer;
+function saveAir() { clearTimeout(airTimer); airTimer = setTimeout(async () => { await chrome.storage.local.set({ airtable: air }); flashSaved(); }, 300); }
+function renderAir() {
+  const v = (id, val) => { document.getElementById(id).value = val || ''; };
+  v('airToken', air.token); v('airBase', air.baseId); v('airTable', air.table); v('airApplied', air.statusApplied);
+  document.getElementById('airDup').checked = !!air.dupCheck;
+  document.getElementById('airAuto').checked = !!air.autoLog;
+  const box = document.getElementById('airFields');
+  box.replaceChildren();
+  for (const [k, label] of AIR_COLS) {
+    const input = el('input', { type: 'text', id: 'air_' + k, spellcheck: 'false' });
+    input.value = air.fields[k] || '';
+    input.addEventListener('input', () => { air.fields[k] = input.value.trim(); saveAir(); });
+    box.append(el('div', { class: 'f' }, el('label', { for: input.id, text: label }), input));
+  }
+}
+for (const [id, key] of [['airToken', 'token'], ['airBase', 'baseId'], ['airTable', 'table'], ['airApplied', 'statusApplied']]) {
+  document.getElementById(id).addEventListener('input', (e) => { air[key] = e.target.value.trim(); saveAir(); });
+}
+document.getElementById('airDup').addEventListener('change', (e) => { air.dupCheck = e.target.checked; saveAir(); });
+document.getElementById('airAuto').addEventListener('change', (e) => { air.autoLog = e.target.checked; saveAir(); });
+document.getElementById('showAir').addEventListener('click', (e) => {
+  const k = document.getElementById('airToken');
+  k.type = k.type === 'password' ? 'text' : 'password';
+  e.target.textContent = k.type === 'password' ? 'Show' : 'Hide';
+});
+document.getElementById('testAir').addEventListener('click', async () => {
+  const st = document.getElementById('airStatus');
+  clearTimeout(airTimer); await chrome.storage.local.set({ airtable: air });
+  st.className = 'hint'; st.textContent = 'Reading your tracker…';
+  const r = await chrome.runtime.sendMessage({ type: 'airTest' });
+  if (r && r.ok) {
+    st.className = 'hint good';
+    st.textContent = `Connected: ${r.rows} row${r.rows === 1 ? '' : 's'}.` + (r.hasApplied || !r.rows ? '' : ` No row uses the status "${air.statusApplied}" yet; check that it matches your Status options.`);
+  } else { st.className = 'hint bad'; st.textContent = (r && r.error) || 'Test failed.'; }
+});
+
+// Answers saved from a form page while this tab is open.
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area !== 'local' || !ch.profile || !ch.profile.newValue) return;
+  if (JSON.stringify(ch.profile.newValue) === lastSaved) return;
+  profile = mergeProfile(ch.profile.newValue);
+  renderSections(); renderCustom();
+});
+
 (async () => {
-  const st = await chrome.storage.local.get(['profile', 'ai', 'resumes']);
+  const st = await chrome.storage.local.get(['profile', 'ai', 'resumes', 'settings', 'airtable']);
   profile = mergeProfile(st.profile);
   ai = mergeAi(st.ai);
+  settings = mergeSettings(st.settings);
+  air = mergeAirtable(st.airtable);
   renderSections();
   renderCustom();
   renderAi();
+  renderSettings();
+  renderAir();
   const n = (st.resumes || []).length;
   document.getElementById('hubCount').textContent = n ? `${n} resume${n > 1 ? 's' : ''} uploaded` : 'No resumes uploaded yet';
   if (!st.profile || !st.profile._v || st.profile._v < PROFILE_VERSION) save();
