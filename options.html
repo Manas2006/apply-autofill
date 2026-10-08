@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Apply Autofill: your profile</title>
+<link rel="stylesheet" href="ui.css">
+<style>
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 80px; }
+  .top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .top img { width: 28px; height: 28px; }
+  h1 { font-size: 20px; margin: 0; flex: 1; letter-spacing: -.015em; }
+  #status { font-size: 12px; color: var(--ok); opacity: 0; transition: opacity .2s; }
+  #status.on { opacity: 1; }
+  .lede { color: var(--mute); margin: 0 0 20px; max-width: 60ch; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px 18px; margin: 0 0 14px; }
+  section.key { border-color: var(--accent); }
+  section h2 { font-size: 14px; margin: 0 0 2px; }
+  section .note { color: var(--mute); font-size: 12px; margin: 0 0 12px; max-width: 70ch; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .f.wide { grid-column: 1 / -1; }
+  .f label { font-size: 12px; font-weight: 600; }
+  .f .hint { font-size: 11px; color: var(--mute); }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+  .row-head { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; font-size: 12px; font-weight: 600; }
+  .row-head span:last-child { width: 28px; }
+  .empty { color: var(--mute); font-size: 12px; padding: 6px 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; color: var(--warn); margin-left: 8px; }
+  section.ai { border-color: #7c3aed; }
+  textarea { width: 100%; font-family: inherit; font-size: 13px; line-height: 1.5; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; resize: vertical; }
+  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+  .keyrow { display: flex; gap: 6px; }
+  .keyrow input { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 400 !important; margin: 4px 0; cursor: pointer; }
+  .link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  #keyStatus.good { color: var(--ok); } #keyStatus.bad { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <img src="icons/icon48.png" alt="">
+    <h1>Your application profile</h1>
+    <span id="status">Saved</span>
+  </div>
+  <p class="lede">Every change saves automatically and stays in this browser. Blank answers are never guessed: those questions get an amber outline on the page so you can answer them yourself.</p>
+  <div id="sectionsTop"></div>
+
+  <section class="ai">
+    <h2>AI mode</h2>
+    <p class="note">When on, Fill also drafts answers to written questions (why this company, describe a project) with Claude, using your AI context, the best-matching resume from your hub, and the job description. Drafts get a purple outline: read and edit them before you submit. Questions that need facts it doesn't have (salary, dates, references) are left for you.</p>
+    <div class="grid">
+      <div class="f wide"><label for="apiKey">Anthropic API key</label>
+        <div class="keyrow"><input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."><button class="btn" id="showKey">Show</button><button class="btn" id="testKey">Test</button></div>
+        <span class="hint" id="keyStatus">Stored only in this browser, sent only to api.anthropic.com, never included in profile exports. Create a key in the Claude Console. Usage is billed to that account, usually a few cents per application.</span></div>
+      <div class="f"><label for="model">Model</label><select id="model"></select></div>
+      <div class="f"><label>Behavior</label>
+        <label class="check"><input type="checkbox" id="drafts"> Draft written answers when I click Fill</label>
+        <label class="check"><input type="checkbox" id="rankClaude"> Rank resumes with Claude (otherwise keyword match)</label></div>
+      <div class="f wide"><label for="aiContext">AI context</label>
+        <textarea id="aiContext" rows="16" spellcheck="true"></textarea>
+        <span class="hint">Everything the AI should know about you and how you write. It goes with every draft, together with your top-ranked resume and the job description. <a class="link" id="resetCtx">Reset to default</a></span></div>
+    </div>
+    <div class="actions"><button class="btn" id="openHub">Open resume hub</button><span class="mute" id="hubCount"></span></div>
+  </section>
+
+  <div id="sections"></div>
+
+  <section>
+    <h2>Custom answers</h2>
+    <p class="note">For questions specific to you. If a question's text contains your phrase, it gets your answer, and this beats every built-in rule. Wrap the phrase in /slashes/ to use a regular expression.</p>
+    <div class="row-head"><span>When the question contains</span><span>Answer with</span><span></span></div>
+    <div class="rows" id="custom"></div>
+    <div class="actions"><button class="btn" id="addRow">Add answer</button></div>
+  </section>
+
+  <section>
+    <h2>Backup</h2>
+    <p class="note">Export your profile to move it to another computer or keep a copy.</p>
+    <div class="actions">
+      <button class="btn" id="export">Export JSON</button>
+      <button class="btn" id="import">Import JSON</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="btn" id="reset">Reset to defaults</button>
+    </div>
+  </section>
+</div>
+<script src="defaults.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Apply Autofill</title>
+<link rel="stylesheet" href="ui.css">
+<style>
+  body { width: 360px; }
+  header { display: flex; align-items: center; gap: 6px; padding: 12px 14px 0; }
+  header img { width: 20px; height: 20px; margin-right: 2px; }
+  header h1 { font-size: 14px; margin: 0; flex: 1; letter-spacing: -.01em; }
+  main { padding: 12px 14px 14px; }
+  #fill { width: 100%; padding: 9px 12px; font-size: 14px; }
+  .hint { margin: 6px 0 0; font-size: 12px; text-align: center; }
+  .toggle { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; font-size: 12px; color: var(--mute); cursor: pointer; }
+  .toggle.off { opacity: .55; cursor: default; }
+  .toggle b { color: var(--ink); font-weight: 600; }
+  .nudge { margin: 12px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); color: var(--ink); font-size: 12px; display: none; }
+  .nudge a, .link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .card { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .card-h { display: flex; align-items: center; gap: 6px; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 0; font-weight: 600; flex: 1; }
+  h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 10px 0 4px; font-weight: 600; }
+  .src { font-size: 12px; color: var(--mute); margin: 4px 0 0; }
+  ol.rank { list-style: none; margin: 6px 0 0; padding: 0; counter-reset: r; }
+  ol.rank li { counter-increment: r; display: grid; grid-template-columns: 20px 1fr; gap: 2px 6px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  ol.rank li:last-child { border-bottom: 0; }
+  ol.rank li::before { content: counter(r); grid-row: span 2; font-weight: 700; color: var(--accent); }
+  ol.rank li:first-child::before { content: "★"; }
+  ol.rank .nm { font-weight: 600; word-break: break-word; }
+  ol.rank .why { font-size: 12px; color: var(--mute); }
+  details summary { cursor: pointer; font-size: 12px; color: var(--mute); margin-top: 6px; }
+  details pre { white-space: pre-wrap; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 140px; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin: 6px 0 0; }
+  textarea { width: 100%; min-height: 90px; font-family: inherit; font-size: 12px; line-height: 1.4; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; margin-top: 6px; resize: vertical; }
+  .row { display: flex; gap: 6px; margin-top: 6px; }
+  #out { display: none; }
+  .dl { display: none; margin: 6px 0 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); grid-column: 2; }
+  .dl > .btn { margin-top: 6px; padding: 5px 10px; font-size: 12px; }
+  .dl-l { display: block; font-size: 12px; color: var(--mute); margin-bottom: 4px; }
+  .dl-row { display: flex; align-items: center; gap: 4px; }
+  .dl-row input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 7px; }
+  .dl-row .ext { font-size: 12px; color: var(--mute); }
+  .dl-row .btn { padding: 5px 9px; font-size: 12px; white-space: nowrap; }
+  .dl .src:empty { display: none; }
+  .sum { display: flex; gap: 12px; font-weight: 600; margin-bottom: 2px; flex-wrap: wrap; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .ai { color: #7c3aed; }
+  @media (prefers-color-scheme: dark) { .ai { color: #c4b5fd; } }
+  ul { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow: auto; }
+  li.it { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  li.it:last-child { border-bottom: 0; }
+  li.it .q { display: block; }
+  li.it .r { display: block; font-size: 12px; color: var(--mute); }
+  li.need .r { color: var(--warn); }
+  li.draft .r { color: var(--ink); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  li.draft.open .r { -webkit-line-clamp: unset; }
+  li.draft .tools { display: flex; gap: 10px; font-size: 11px; margin-top: 2px; }
+  .msg { font-size: 12px; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icons/icon32.png" alt="">
+  <h1>Apply Autofill</h1>
+  <button class="icon-btn" id="hub" title="Resume hub">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+  </button>
+  <button class="icon-btn" id="opts" title="Profile and AI settings">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</header>
+<main>
+  <button class="btn primary" id="fill">Fill this page</button>
+  <p class="hint mute" id="shortcut"></p>
+  <label class="toggle"><input type="checkbox" id="overwrite"> Overwrite fields that already have text</label>
+  <label class="toggle" id="aiToggle"><input type="checkbox" id="aiDrafts"> <span><b>AI drafts</b> for written questions <span id="aiWhy"></span></span></label>
+  <div class="nudge" id="nudge"></div>
+
+  <section class="card" id="match">
+    <div class="card-h"><h2>Best resumes for this role</h2><button class="icon-btn" id="rerank" title="Read the page again">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg></button></div>
+    <p class="src" id="matchStatus">Reading the job description…</p>
+    <ol class="rank" id="rank"></ol>
+    <div class="dl" id="dl">
+      <label class="dl-l" for="dlName">Download the top resume as</label>
+      <div class="dl-row"><input type="text" id="dlName" spellcheck="false"><span class="ext" id="dlExt">.pdf</span></div>
+      <button class="btn primary" id="dlBtn">Download PDF</button>
+      <p class="src" id="dlMsg"></p>
+    </div>
+    <details id="jdBox"><summary id="jdSummary">Job description</summary><pre id="jdPreview"></pre>
+      <textarea id="jdPaste" placeholder="Wrong or missing? Paste the job description here"></textarea>
+      <div class="row"><button class="btn" id="useJd">Use pasted text</button><button class="btn" id="clearJd">Read the page instead</button></div>
+    </details>
+  </section>
+
+  <section class="card" id="out">
+    <div class="sum"><span class="ok" id="nFilled"></span><span class="ai" id="nAi"></span><span class="warn" id="nReview"></span></div>
+    <p class="msg warn" id="msg"></p>
+    <p class="src" id="used"></p>
+    <div id="aiWrap"><h3>AI drafts: read before you submit</h3><ul id="drafts"></ul></div>
+    <div id="needWrap"><h3>Needs you</h3><ul id="need"></ul></div>
+    <details id="doneWrap"><summary>Show what was filled</summary><ul id="done"></ul></details>
+  </section>
+</main>
+<script src="defaults.js"></script>
+<script src="lib/filestore.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
